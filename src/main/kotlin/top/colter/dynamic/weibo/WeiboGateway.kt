@@ -44,6 +44,7 @@ internal data class WeiboPostSnapshot(
     val poll: WeiboPollSnapshot? = null,
     val reposted: WeiboPostSnapshot? = null,
     val metrics: WeiboPostMetrics = WeiboPostMetrics(),
+    val numericId: String? = null,
 )
 
 internal data class WeiboImageSnapshot(
@@ -158,6 +159,10 @@ internal interface WeiboGateway {
         sinceEpochSeconds: Long? = null,
     ): WeiboTimelinePage {
         return WeiboTimelinePage()
+    }
+
+    suspend fun fetchFollowTimelinePage(cursor: String?): WeiboTimelinePage {
+        throw UnsupportedOperationException("不支持微博关注流分页读取")
     }
 
     suspend fun enrichPost(post: WeiboPostSnapshot): WeiboPostSnapshot {

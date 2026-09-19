@@ -4,6 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.runInterruptible
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -913,7 +914,7 @@ internal class WeiboClient(
             .GET()
             .build()
 
-        val response = withContext(Dispatchers.IO) {
+        val response = runInterruptible(Dispatchers.IO) {
             httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8))
         }
         return parseHttpJsonResponse(
@@ -959,7 +960,7 @@ internal class WeiboClient(
             .GET()
             .build()
 
-        return withContext(Dispatchers.IO) {
+        return runInterruptible(Dispatchers.IO) {
             httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8))
         }
     }
@@ -1129,6 +1130,7 @@ internal class WeiboClient(
 
         return WeiboPostSnapshot(
             postId = postId,
+            numericId = string("idstr") ?: long("id")?.toString() ?: string("mid"),
             userId = userId,
             screenName = user?.string("screen_name")
                 ?: UNKNOWN_WEIBO_USER_NAME.takeIf { userId == UNKNOWN_WEIBO_USER_ID },
@@ -1787,6 +1789,13 @@ internal class WeiboHttpGateway(
             posts = posts.distinctBy { it.postId },
             nextCursor = nextCursor,
         )
+    }
+
+    override suspend fun fetchFollowTimelinePage(cursor: String?): WeiboTimelinePage {
+        val listId = resolveFriendTimelineListId()
+        return withRequestInterval {
+            client.fetchFriendTimeline(listId = listId, sinceId = cursor ?: "0", count = 25)
+        }
     }
 
     override suspend fun enrichPost(post: WeiboPostSnapshot): WeiboPostSnapshot {

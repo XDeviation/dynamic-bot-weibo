@@ -13,6 +13,9 @@ import top.colter.dynamic.core.link.LinkVideoDownloader
 import top.colter.dynamic.core.link.ParsedLink
 import top.colter.dynamic.core.plugin.FollowActionResult
 import top.colter.dynamic.core.plugin.FollowState
+import top.colter.dynamic.core.plugin.PluginAdminApiProvider
+import top.colter.dynamic.core.plugin.PluginAdminApiRequest
+import top.colter.dynamic.core.plugin.PluginAdminApiResponse
 import top.colter.dynamic.core.plugin.PluginContext
 import top.colter.dynamic.core.plugin.PublisherFollowPlugin
 import top.colter.dynamic.core.plugin.PublisherLoginMethod
@@ -27,6 +30,7 @@ public class WeiboPublisherPlugin private constructor(
     private val runtime: WeiboPublisherRuntime,
 ) :
     PublisherSourcePlugin,
+    PluginAdminApiProvider,
     PublisherLookupPlugin,
     PublisherFollowPlugin,
     PublisherLoginProvider,
@@ -88,6 +92,9 @@ public class WeiboPublisherPlugin private constructor(
     override fun applyConfig(next: WeiboPublisherConfig): ConfigApplyResult {
         return runtime.applyConfig(next)
     }
+
+    override suspend fun handleAdminApi(request: PluginAdminApiRequest): PluginAdminApiResponse =
+        runtime.handleAdminApi(request)
 
     override suspend fun fetchPublisherInfo(userId: String): PublisherInfo? {
         return runtime.fetchPublisherInfo(userId)

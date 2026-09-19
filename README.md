@@ -48,6 +48,33 @@
 - 出现风控或请求失败时，先暂停轮询或增大请求间隔。
 - 插件通过微博关注流检测新动态，因此订阅的用户需要处于已关注状态。开启主程序的“订阅时自动关注”最省事。
 
+## 只读内容接口
+
+插件提供 `GET /api/plugins/weibo-publisher/admin/feed?uid=<微博UID>&cursor=<可选游标>`，
+沿用 Dynamic Bot 管理 API 的 Bearer Token 鉴权。接口只读取已登录账号的关注流，
+不关注账号、不创建订阅、不推送消息，也不要求启用轮询。微博 Cookie 始终留在插件内。
+目标 UID 必须已被当前微博账号关注；首次接入前请在微博自行确认关注关系。
+
+成功响应包含 `status: "ready"`、`scope: "following"`、`publisher: {uid, name}`、
+`posts: [{id, title, text, content_truncated, url, published_at}]`、`next_cursor`、`page_min_id` 和 `page_max_id`。
+`published_at` 是 Unix 秒；`id` 和页面边界是十进制字符串，使用微博数值状态 ID，
+与链接中的 base62 ID 分开保存。正文只导出关注流中已观察到的文字、转发文字和媒体卡片说明，
+不额外请求长文详情。每条最多 10,000 字符；长文、转发长文或截断内容会标记
+`content_truncated: true`。需要完整内容时使用原始链接；普通动态推送的长文补全保持不变。
+
+接口总时限 45 秒（包括等待串行读取锁），超时返回 `unavailable`。
+接入此接口时建议将 `requestIntervalSeconds` 设为 1–5 秒；接口保留原有请求间隔，
+更大的间隔可能耗尽时限并返回 `unavailable`，不会跳过或缩短限速等待。
+调用方 HTTP 读取超时应至少 50 秒，每个后台任务处理一页并保留翻页进度。
+每次仅请求一页关注流（最多 25 条），再按 UID 过滤。因此空 `posts` 仍可能带有下一页。
+页面边界覆盖过滤前的全部动态；空页面边界为 `null`。调用方应保留翻页进度并设置请求预算，
+完成扫描后再推进高水位；初次注册可以使用首页 `page_max_id` 建立基线，避免导入历史内容。
+接口不承诺微博关注流完整覆盖所有历史动态。
+
+未登录、未关注和暂不可用分别返回 HTTP 409，`status` 为 `login_required`、
+`not_following`、`unavailable`，错误消息不包含上游响应或 Cookie。非法 UID/游标返回 HTTP 400。
+修复连接后可重试；调用方不要把这些状态解释为来源没有新内容。
+
 ## 构建与测试
 
 ```powershell

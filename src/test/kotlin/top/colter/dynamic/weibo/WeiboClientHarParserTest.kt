@@ -19,6 +19,17 @@ class WeiboClientHarParserTest {
     private val client = WeiboClient(WeiboPublisherConfig())
 
     @Test
+    fun `friend timeline keeps numeric status id distinct from base62 link id`() {
+        val post = client.parseFriendTimelineResponse(
+            """{"ok":1,"statuses":[{"mblogid":"ABCxyz","idstr":"5123456789012345",
+                "user":{"idstr":"42"},"text":"正文"}],"since_id":"5123456789012344"}""",
+        ).posts.single()
+        assertEquals("ABCxyz", post.postId)
+        assertEquals("5123456789012345", post.numericId)
+        assertEquals("https://weibo.com/42/ABCxyz", post.url)
+    }
+
+    @Test
     fun `parse profile info from har`() {
         val response = harResponse("个人主页.har", "/ajax/profile/info") ?: return
 

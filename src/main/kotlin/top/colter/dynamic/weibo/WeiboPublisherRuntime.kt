@@ -30,6 +30,8 @@ import top.colter.dynamic.core.link.LinkVideoDownloadRequest
 import top.colter.dynamic.core.link.LinkVideoDownloadResult
 import top.colter.dynamic.core.link.LinkVideoDownloader
 import top.colter.dynamic.core.link.ParsedLink
+import top.colter.dynamic.core.plugin.PluginAdminApiRequest
+import top.colter.dynamic.core.plugin.PluginAdminApiResponse
 import top.colter.dynamic.core.plugin.PluginContext
 import top.colter.dynamic.core.plugin.FollowActionResult
 import top.colter.dynamic.core.plugin.FollowState
@@ -270,6 +272,11 @@ internal class WeiboPublisherRuntime() :
             },
         )
     }
+
+    private val feedApi = WeiboFeedApi { gateway }
+
+    public suspend fun handleAdminApi(request: PluginAdminApiRequest): PluginAdminApiResponse =
+        feedApi.handle(request)
 
     override suspend fun fetchPublisherInfo(userId: String): PublisherInfo? {
         val normalized = normalizeUserId(userId) ?: return null
